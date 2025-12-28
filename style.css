@@ -7,7 +7,8 @@
 
 html {
 	min-height: 100%;
-	background: linear-gradient(to top, rgba(8,81,98,1) 5%, rgba(198,231,249,1));
+	background: radial-gradient(circle closest-side, #042e19 0%, #005934 80%, #005934 120%, #000000 150%);
+	/* background-color: #004629; */
 }
 body {
 	font-family: "Sulphur Point", serif;
@@ -21,8 +22,8 @@ body {
 canvas {
 	width: min(100vw - 20px, 100vh - 20px);
 	height: auto;
-	border: 2px solid #00000028;
-	border-radius: 5px;
+	border: 2px solid #000000;
+	border-radius: 3px;
 	box-sizing: border-box;
 	/*grid background*/
 	background-image: linear-gradient(var(--line-color-1) 1.5px, transparent 1.5px),

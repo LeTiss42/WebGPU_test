@@ -26,30 +26,50 @@ async function start() {
 }
 
 function createFVertices() {
+	// Each vertex now has: position (x, y) + barycentric (a, b, c)
 	const vertexData = new Float32Array([
-		// left column
-		0, 0,
-		30, 0,
-		0, 150,
-		30, 150,
+		// left column - triangle 1
+		0, 0,      1, 0, 0,
+		30, 0,     0, 1, 0,
+		0, 150,    0, 0, 1,
+		// left column - triangle 2
+		0, 150,    1, 0, 0,
+		30, 0,     0, 1, 0,
+		30, 150,   0, 0, 1,
 	
-		// top rung
-		30, 0,
-		100, 0,
-		30, 30,
-		100, 30,
+		// top rung - triangle 1
+		30, 0,     1, 0, 0,
+		100, 0,    0, 1, 0,
+		30, 30,    0, 0, 1,
+		// top rung - triangle 2
+		30, 30,    1, 0, 0,
+		100, 0,    0, 1, 0,
+		100, 30,   0, 0, 1,
 	
-		// middle rung
-		30, 60,
-		70, 60,
-		30, 90,
-		70, 90,
+		// middle rung - triangle 1
+		30, 60,    1, 0, 0,
+		70, 60,    0, 1, 0,
+		30, 90,    0, 0, 1,
+		// middle rung - triangle 2
+		30, 90,    1, 0, 0,
+		70, 60,    0, 1, 0,
+		70, 90,    0, 0, 1,
 	]);
 
+	// Old indexData with shared vertices (more efficient but incompatible with barycentric coords):
+	// const indexData = new Uint32Array([
+	//     0,  1,  2,    2,  1,  3,  // left column
+	//     4,  5,  6,    6,  5,  7,  // top rung
+	//     8,  9, 10,   10,  9, 11,  // middle rung
+	// ]);
+
 	const indexData = new Uint32Array([
-		0,  1,  2,    2,  1,  3,  // left column
-		4,  5,  6,    6,  5,  7,  // top run
-		8,  9, 10,   10,  9, 11,  // middle run
+		0,  1,  2,
+		3,  4,  5,
+		6,  7,  8,
+		9, 10, 11,
+		12, 13, 14,
+		15, 16, 17,
 	]);
 
 	return {
@@ -72,10 +92,12 @@ function myShaderCode() {
 
 		struct Vertex {
 			@location(0) position: vec2f,
+			@location(1) barycentric: vec3f,
 		};
 
 		struct VSOutput {
 			@builtin(position) position: vec4f,
+			@location(0) barycentric: vec3f,
 		};
 
 		@group(0) @binding(0) var<uniform> uni: Uniforms;
@@ -98,11 +120,20 @@ function myShaderCode() {
 			let clipSpace = flippedClipSpace * vec2f(1, -1);
 
 			vsOut.position = vec4f(clipSpace, 0.0, 1.0);
+			vsOut.barycentric = vert.barycentric;
 			return vsOut;
 		}
 
 		@fragment fn fs(fsInput: VSOutput) -> @location(0) vec4f {
-			return uni.color;
+			// Edge detection using barycentric coordinates
+			let edgeThickness = 0.03;
+			let isEdge = min(min(fsInput.barycentric.x, fsInput.barycentric.y), fsInput.barycentric.z) < edgeThickness;
+			
+			if (isEdge) {
+				return vec4f(0.054, 0.298, 0.165, 1.0);
+			} else {
+				return uni.color;
+			}
 		}
 	`;
 }
@@ -137,12 +168,19 @@ function main(device) {
 		vertex: {
 			module: myShaderModule,
 			buffers: [{
-				arrayStride: (2) * 4, //(2) floats, 4 bytes each
-				attributes: [{
-					format: "float32x2",
-					offset: 0,
-					shaderLocation: 0,
-				}],
+				arrayStride: (2 + 3) * 4,
+				attributes: [
+					{
+						format: "float32x2",
+						offset: 0,
+						shaderLocation: 0,
+					},
+					{
+						format: "float32x3",
+						offset: 2 * 4,
+						shaderLocation: 1,
+					}
+				],
 			}]
 		},
 		fragment: {
@@ -178,7 +216,8 @@ function main(device) {
 	const rotationValue = uniformValues.subarray(kRotationOffset, kRotationOffset + 2);
 	const scaleValue = uniformValues.subarray(kScaleOffset, kScaleOffset + 2);
 
-	colorValue.set([Math.random(), Math.random(), Math.random(), 1]);
+	// colorValue.set([Math.random(), Math.random(), Math.random(), 1]);
+	colorValue.set([0.141, 0.749, 0.412, 1]);
 
 	// javascript destructuring syntax
 	const { vertexData, indexData, numVertices} = createFVertices();
