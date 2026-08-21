@@ -514,7 +514,7 @@ function main(device) {
 	let lastMouseX = 0;
 	let lastMouseY = 0;
 	const rotationSensitivity = degToRad(0.5);
-	const translationSensitivity = 1;
+	const translationSensitivity = 1; // 1 translation unit per dragged screen pixel
 
 	canvas.addEventListener("contextmenu", (event) => {
 		event.preventDefault();
