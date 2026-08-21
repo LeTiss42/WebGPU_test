@@ -510,6 +510,41 @@ function main(device) {
 	});
 	observer.observe(canvas);
 
+	let isDragging = false;
+	let lastMouseX = 0;
+	let lastMouseY = 0;
+	const rotationSensitivity = degToRad(0.5);
+
+	canvas.addEventListener("mousedown", (event) => {
+		if (event.button !== 0) {
+			return;
+		}
+		isDragging = true;
+		lastMouseX = event.clientX;
+		lastMouseY = event.clientY;
+	});
+
+	canvas.addEventListener("mousemove", (event) => {
+		if (!isDragging) {
+			return;
+		}
+
+		const deltaX = event.clientX - lastMouseX;
+		const deltaY = event.clientY - lastMouseY;
+		lastMouseX = event.clientX;
+		lastMouseY = event.clientY;
+
+		settings.rotation[1] += deltaX * rotationSensitivity;
+		settings.rotation[0] += deltaY * rotationSensitivity;
+		render();
+	});
+
+	const stopDragging = () => {
+		isDragging = false;
+	};
+
+	window.addEventListener("mouseup", stopDragging);
+
 	document.addEventListener("keydown", (event) => {
 		const transStep = 5; // Déplacement en pixels
 		const rotStep = degToRad(5); // Rotation en degres
