@@ -513,7 +513,7 @@ function main(device) {
 	let isDragging = false;
 	let lastMouseX = 0;
 	let lastMouseY = 0;
-	const dragRotationStep = degToRad(0.5);
+	const rotationSensitivity = degToRad(0.5);
 
 	canvas.addEventListener("mousedown", (event) => {
 		if (event.button !== 0) {
@@ -534,8 +534,8 @@ function main(device) {
 		lastMouseX = event.clientX;
 		lastMouseY = event.clientY;
 
-		settings.rotation[1] += deltaX * dragRotationStep;
-		settings.rotation[0] += deltaY * dragRotationStep;
+		settings.rotation[1] += deltaX * rotationSensitivity;
+		settings.rotation[0] += deltaY * rotationSensitivity;
 		render();
 	});
 
@@ -543,8 +543,6 @@ function main(device) {
 		isDragging = false;
 	};
 
-	canvas.addEventListener("mouseup", stopDragging);
-	canvas.addEventListener("mouseleave", stopDragging);
 	window.addEventListener("mouseup", stopDragging);
 
 	document.addEventListener("keydown", (event) => {
