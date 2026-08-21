@@ -510,22 +510,28 @@ function main(device) {
 	});
 	observer.observe(canvas);
 
-	let isDragging = false;
+	let dragMode = null;
 	let lastMouseX = 0;
 	let lastMouseY = 0;
 	const rotationSensitivity = degToRad(0.5);
+	const translationSensitivity = 1;
+
+	canvas.addEventListener("contextmenu", (event) => {
+		event.preventDefault();
+	});
 
 	canvas.addEventListener("mousedown", (event) => {
-		if (event.button !== 0) {
+		if (event.button !== 0 && event.button !== 2) {
 			return;
 		}
-		isDragging = true;
+		event.preventDefault();
+		dragMode = event.button === 0 ? "rotate" : "translate";
 		lastMouseX = event.clientX;
 		lastMouseY = event.clientY;
 	});
 
 	canvas.addEventListener("mousemove", (event) => {
-		if (!isDragging) {
+		if (!dragMode) {
 			return;
 		}
 
@@ -534,13 +540,18 @@ function main(device) {
 		lastMouseX = event.clientX;
 		lastMouseY = event.clientY;
 
-		settings.rotation[1] += deltaX * rotationSensitivity;
-		settings.rotation[0] += deltaY * rotationSensitivity;
+		if (dragMode === "rotate") {
+			settings.rotation[1] += deltaX * rotationSensitivity;
+			settings.rotation[0] += deltaY * rotationSensitivity;
+		} else if (dragMode === "translate") {
+			settings.translation[0] += deltaX * translationSensitivity;
+			settings.translation[1] += deltaY * translationSensitivity;
+		}
 		render();
 	});
 
 	const stopDragging = () => {
-		isDragging = false;
+		dragMode = null;
 	};
 
 	window.addEventListener("mouseup", stopDragging);
