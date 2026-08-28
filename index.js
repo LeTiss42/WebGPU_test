@@ -314,6 +314,7 @@ function myShaderCode() {
 	return /* wgsl */`
 		struct Uniforms {
 			matrix: mat4x4f,
+			fudgeFactor: f32,
 		};
 
 		struct Vertex {
@@ -330,7 +331,13 @@ function myShaderCode() {
 
 		@vertex fn vs(vert: Vertex) -> VSOutput {
 			var vsOut: VSOutput;
-			vsOut.position = uni.matrix * vert.position;
+
+			let position = uni.matrix * vert.position;
+
+			let zToDivideBy = 1.0 + position.z * uni.fudgeFactor;
+
+			vsOut.position = vec4f(position.xyz, zToDivideBy);
+
 			vsOut.color = vert.color;
 			return vsOut;
 		}
@@ -347,6 +354,7 @@ function main(device) {
 		translation: [45, 100, 0],
 		rotation: [degToRad(40), degToRad(25), degToRad(325)],
 		scale: [1, 1, 1],
+		fudgeFactor: 0.5,
 	};
 
 	//get canvas
@@ -404,7 +412,8 @@ function main(device) {
 
 
 	//uniform buffer
-	const uniformBufferSize = (16) * 4;
+	//matrix + fudgeFactor + padding
+	const uniformBufferSize = (16 + 1 + 3) * 4;
 	const uniformBuffer = device.createBuffer({
 		label: "uniforms buffer",
 		size: uniformBufferSize,
@@ -414,8 +423,10 @@ function main(device) {
 	const uniformValues = new Float32Array(uniformBufferSize / 4);
 
 	const kMatrixOffset = 0;
+	const kFudgeFactorOffset = 16;
 
 	const matrixValue = uniformValues.subarray(kMatrixOffset, kMatrixOffset + 16);
+	const fudgeFactorValue = uniformValues.subarray(kFudgeFactorOffset, kFudgeFactorOffset + 1);
 
 	const { vertexData, numVertices} = createFVertices();
 
@@ -487,6 +498,8 @@ function main(device) {
 		mat4.rotateY(matrixValue, settings.rotation[1], matrixValue);
 		mat4.rotateZ(matrixValue, settings.rotation[2], matrixValue);
 		mat4.scale(matrixValue, settings.scale, matrixValue);
+
+		fudgeFactorValue[0] = settings.fudgeFactor;
 
 		device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
@@ -560,6 +573,7 @@ function main(device) {
 		const transStep = 5; // Déplacement en pixels
 		const rotStep = degToRad(5); // Rotation en degres
 		const scaleStep = 0.1;
+		const fudgeStep = 0.1;
 
 		switch (event.key) {
 			case "ArrowUp":
@@ -587,10 +601,10 @@ function main(device) {
 				settings.rotation[0] -= rotStep; // Rotation X-
 				break;
 			case "a":
-					settings.rotation[1] += rotStep; // Rotation Y+
+				settings.rotation[1] += rotStep; // Rotation Y+
 				break;
 			case "s":
-					settings.rotation[1] -= rotStep; // Rotation Y-
+				settings.rotation[1] -= rotStep; // Rotation Y-
 				break;
 			case "e":
 				settings.rotation[2] += rotStep; // Rotation Z+
@@ -599,13 +613,13 @@ function main(device) {
 				settings.rotation[2] -= rotStep; // Rotation Z-
 				break;
 			case "z":
-					settings.scale[0] += scaleStep; // Scale X+
+				settings.scale[0] += scaleStep; // Scale X+
 				break;
 			case "x":
-					settings.scale[0] -= scaleStep; // Scale X-
+				settings.scale[0] -= scaleStep; // Scale X-
 				break;
 			case "c":
-					settings.scale[1] += scaleStep; // Scale Y+
+				settings.scale[1] += scaleStep; // Scale Y+
 				break;
 			case "v":
 				settings.scale[1] -= scaleStep; // Scale Y-
@@ -615,7 +629,13 @@ function main(device) {
 				break;
 			case "n":
 				settings.scale[2] -= scaleStep; // Scale Z-
-			break;
+				break;
+			case "i":
+				settings.fudgeFactor += fudgeStep; // Fudge factor +
+				break;
+			case "o":
+				settings.fudgeFactor -= fudgeStep; // Fudge factor -
+				break;
 		}
 		render();
 	});
